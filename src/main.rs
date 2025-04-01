@@ -24,8 +24,6 @@ fn parse_pipe_delimited_line(line: &str) -> Vec<String> {
 
 #[tokio::main]
 async fn main() -> StdResult<(),  Box<dyn Error>> { 
-
-
     let set: HashSet<&str> = ["brave-browser", "firefox", "chromium"]
         .iter()
         .cloned()
@@ -45,16 +43,33 @@ async fn main() -> StdResult<(),  Box<dyn Error>> {
                 .post(s)
                 .send()
                 .await?;
-            
 
-            //swaymsg '[app_id="brave-browser"]  focus'
             let _ = Command::new("swaymsg")
                 .arg("[app_id=\"brave-browser\"] focus")
-                //.arg("focus'")
                 .output()
                 .await?;
             println!("Status: {}", resp.status());
-        } else {
+        } else if  my_line[4] == "tmux" {
+            let id = &my_line[3];
+            let tty = &my_line[1];
+            let workspace = &my_line[0];
+
+            let full_cmd = format!("tmux select-window -t {} \\; select-pane -t {}", workspace, id);
+            let _ = Command::new("sh")
+                .arg("-c")
+                .arg(&full_cmd)
+                .output()
+                .await?;
+
+
+            let _ = Command::new("swaymsg")
+                .arg(format!("[app_id=\"{}\"] focus", tty))
+                .output()
+                .await?;
+
+
+        }
+        else {
             let app = &my_line[1]; 
             let title = &my_line[2];
             println!("App: {}", app);
