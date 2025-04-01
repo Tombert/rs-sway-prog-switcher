@@ -1,11 +1,10 @@
-use tokio::process::Command;
+use csv::ReaderBuilder;
 use serde_json::{Result, Value};
 use std::collections::HashSet;
 use std::result::Result as StdResult;
 use std::{collections::HashMap, error::Error, future::Future, pin::Pin};
 use tokio::io::{self, AsyncBufReadExt, BufReader};
-use csv::ReaderBuilder;
-
+use tokio::process::Command;
 
 fn parse_pipe_delimited_line(line: &str) -> Vec<String> {
     let sanitized = line.split('|').map(str::trim).collect::<Vec<_>>().join("|");
@@ -23,16 +22,13 @@ fn parse_pipe_delimited_line(line: &str) -> Vec<String> {
         .collect()
 }
 
-async fn tab_handler(my_line : Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>>{
-    let id = &my_line[3]; 
+async fn tab_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>> {
+    let id = &my_line[3];
     let client = reqwest::Client::new();
 
     let s = format!("http://localhost:9222/json/activate/{}", id);
-    println!("url {}",s);
-    let _resp = client
-        .post(s)
-        .send()
-        .await?;
+    println!("url {}", s);
+    let _resp = client.post(s).send().await?;
 
     let _ = Command::new("swaymsg")
         .arg("[app_id=\"brave-browser\"] focus")
@@ -41,10 +37,8 @@ async fn tab_handler(my_line : Vec<String>) -> StdResult<(), Box<dyn Error + Sen
     Ok(())
 }
 
-async fn default_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>>
-{
-
-    let app = &my_line[1]; 
+async fn default_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>> {
+    let app = &my_line[1];
     let title = &my_line[2];
     println!("App: {}", app);
     let real_title = if !title.is_empty() {
@@ -55,7 +49,7 @@ async fn default_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + 
 
     println!("Title: {}", real_title);
 
-    let arg_str = format!("[app_id=\"{}\"{}] focus", app, real_title );
+    let arg_str = format!("[app_id=\"{}\"{}] focus", app, real_title);
     let _ = Command::new("swaymsg")
         .arg(arg_str)
         //.arg("focus'")
@@ -65,13 +59,15 @@ async fn default_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + 
 }
 
 type HandlerFn = Box<
-    dyn Fn(Vec<String>) -> Pin<Box<dyn Future<Output = StdResult<(), Box<dyn Error + Send + Sync>>> + Send>>
+    dyn Fn(
+            Vec<String>,
+        )
+            -> Pin<Box<dyn Future<Output = StdResult<(), Box<dyn Error + Send + Sync>>> + Send>>
         + Send
         + Sync,
 >;
 
 fn make_handler<F, Fut>(f: F) -> HandlerFn
-
 where
     F: Fn(Vec<String>) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = StdResult<(), Box<dyn Error + Send + Sync>>> + Send + 'static,
@@ -79,34 +75,34 @@ where
     Box::new(move |args| Box::pin(f(args)))
 }
 
+async fn tmux_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>> {
+    let id = &my_line[3];
+    let tty = &my_line[1];
+    let workspace = &my_line[0];
 
-async fn tmux_handler(my_line : Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>>
-{
-            let id = &my_line[3];
-            let tty = &my_line[1];
-            let workspace = &my_line[0];
+    let full_cmd = format!(
+        "tmux select-window -t {} \\; select-pane -t {}",
+        workspace, id
+    );
+    let _ = Command::new("sh").arg("-c").arg(&full_cmd).output().await?;
 
-            let full_cmd = format!("tmux select-window -t {} \\; select-pane -t {}", workspace, id);
-            let _ = Command::new("sh")
-                .arg("-c")
-                .arg(&full_cmd)
-                .output()
-                .await?;
-
-
-            let _ = Command::new("swaymsg")
-                .arg(format!("[app_id=\"{}\"] focus", tty))
-                .output()
-                .await?;
+    let _ = Command::new("swaymsg")
+        .arg(format!("[app_id=\"{}\"] focus", tty))
+        .output()
+        .await?;
     Ok(())
-
 }
 
 #[tokio::main]
-async fn main() -> StdResult<(),  Box<dyn Error>> { 
-    let map: HashMap<String, HandlerFn> = vec![("tmux".to_string(), make_handler(tmux_handler)), ("tab".to_string(), make_handler(tab_handler))].into_iter().collect();
+async fn main() -> StdResult<(), Box<dyn Error>> {
+    let map: HashMap<String, HandlerFn> = vec![
+        ("tmux".to_string(), make_handler(tmux_handler)),
+        ("tab".to_string(), make_handler(tab_handler)),
+    ]
+    .into_iter()
+    .collect();
     let stdin = BufReader::new(io::stdin());
-    let mut lines = stdin.lines(); 
+    let mut lines = stdin.lines();
 
     while let Ok(Some(line)) = lines.next_line().await {
         let my_line = parse_pipe_delimited_line(line.as_ref());
