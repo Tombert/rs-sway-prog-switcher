@@ -39,12 +39,9 @@ async fn tab_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send
 async fn default_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>> {
     let app = &my_line[1];
     let title = &my_line[2];
-    let real_title = if !title.is_empty() {
-        format!(" title=\"{}\"", title)
-    } else {
-        "".to_string()
-    };
-
+    let real_title = (!title.is_empty())
+        .then(|| format!(" title=\"{}\"", title))
+        .unwrap_or_default();
 
     let arg_str = format!("[app_id=\"{}\"{}] focus", app, real_title);
     let _ = Command::new("swaymsg")
@@ -87,7 +84,7 @@ async fn tmux_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Sen
         .arg(format!("[app_id=\"{}\"] focus", tty))
         .output();
 
-    let (_resp1, _resp2) = tokio::join!(resp1, resp2); 
+    let (_resp1, _resp2) = tokio::join!(resp1, resp2);
 
     Ok(())
 }
