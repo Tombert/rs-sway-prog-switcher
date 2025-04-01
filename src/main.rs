@@ -48,7 +48,7 @@ async fn main() -> StdResult<(),  Box<dyn Error>> {
             
 
             //swaymsg '[app_id="brave-browser"]  focus'
-            let output = Command::new("swaymsg")
+            let _ = Command::new("swaymsg")
                 .arg("[app_id=\"brave-browser\"] focus")
                 //.arg("focus'")
                 .output()
@@ -67,7 +67,7 @@ async fn main() -> StdResult<(),  Box<dyn Error>> {
             println!("Title: {}", real_title);
 
             let arg_str = format!("[app_id=\"{}\"{}] focus", app, real_title );
-            let output = Command::new("swaymsg")
+            let _ = Command::new("swaymsg")
                 .arg(arg_str)
                 //.arg("focus'")
                 .output()
