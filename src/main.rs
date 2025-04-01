@@ -27,7 +27,6 @@ async fn tab_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send
     let client = reqwest::Client::new();
 
     let s = format!("http://localhost:9222/json/activate/{}", id);
-    println!("url {}", s);
     let _resp = client.post(s).send().await?;
 
     let _ = Command::new("swaymsg")
@@ -110,6 +109,5 @@ async fn main() -> StdResult<(), Box<dyn Error>> {
         let handler = map.get(&my_line[4]).unwrap_or(&default);
         let _ = handler(my_line).await;
     }
-    println!("howdy");
     Ok(())
 }
