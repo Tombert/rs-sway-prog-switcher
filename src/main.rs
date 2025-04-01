@@ -81,12 +81,14 @@ async fn tmux_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Sen
         "tmux select-window -t {} \\; select-pane -t {}",
         workspace, id
     );
-    let _ = Command::new("sh").arg("-c").arg(&full_cmd).output().await?;
+    let resp1 = Command::new("sh").arg("-c").arg(&full_cmd).output();
 
-    let _ = Command::new("swaymsg")
+    let resp2 = Command::new("swaymsg")
         .arg(format!("[app_id=\"{}\"] focus", tty))
-        .output()
-        .await?;
+        .output();
+
+    let (_resp1, _resp2) = tokio::join!(resp1, resp2); 
+
     Ok(())
 }
 
