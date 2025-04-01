@@ -25,26 +25,26 @@ async fn tab_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send
     let client = reqwest::Client::new();
 
     let s = format!("http://localhost:9222/json/activate/{}", id);
-    let _resp = client.post(s).send().await?;
+    let resp1 = client.post(s).send();
 
-    let _ = Command::new("swaymsg")
+    let resp2 = Command::new("swaymsg")
         .arg("[app_id=\"brave-browser\"] focus")
-        .output()
-        .await?;
+        .output();
+
+    let (_resp1, _resp2) = tokio::join!(resp1, resp2);
+
     Ok(())
 }
 
 async fn default_handler(my_line: Vec<String>) -> StdResult<(), Box<dyn Error + Send + Sync>> {
     let app = &my_line[1];
     let title = &my_line[2];
-    println!("App: {}", app);
     let real_title = if !title.is_empty() {
         format!(" title=\"{}\"", title)
     } else {
         "".to_string()
     };
 
-    println!("Title: {}", real_title);
 
     let arg_str = format!("[app_id=\"{}\"{}] focus", app, real_title);
     let _ = Command::new("swaymsg")
