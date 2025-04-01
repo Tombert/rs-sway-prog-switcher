@@ -111,7 +111,6 @@ async fn main() -> StdResult<(),  Box<dyn Error>> {
     let map: HashMap<String, HandlerFn> = vec![("tmux".to_string(), make_handler(tmux_handler)), ("tab".to_string(), make_handler(tab_handler))].into_iter().collect();
     let stdin = BufReader::new(io::stdin());
     let mut lines = stdin.lines(); 
-    let client = reqwest::Client::new();
 
     while let Ok(Some(line)) = lines.next_line().await {
         let my_line = parse_pipe_delimited_line(line.as_ref());
