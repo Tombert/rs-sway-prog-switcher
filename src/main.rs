@@ -104,10 +104,6 @@ async fn tmux_handler(my_line : Vec<String>) -> StdResult<(), Box<dyn Error + Se
 
 #[tokio::main]
 async fn main() -> StdResult<(),  Box<dyn Error>> { 
-    let set: HashSet<&str> = ["brave-browser", "firefox", "chromium"]
-        .iter()
-        .cloned()
-        .collect();
     let map: HashMap<String, HandlerFn> = vec![("tmux".to_string(), make_handler(tmux_handler)), ("tab".to_string(), make_handler(tab_handler))].into_iter().collect();
     let stdin = BufReader::new(io::stdin());
     let mut lines = stdin.lines(); 
